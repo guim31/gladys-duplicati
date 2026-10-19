@@ -66,6 +66,7 @@ test('the results of a real Duplicati: success, warning, fatal error, none', asy
   assert.equal(fatal.errors, 1);
   assert.equal(fatal.warnings, 3);
   assert.match(fatal.message, /missing from the remote storage/);
+  assert.ok(!fatal.message.includes('\n'), 'one line');
   assert.equal(before.result, 'success');
   assert.ok(fatal.begin > before.begin);
 

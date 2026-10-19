@@ -325,7 +325,10 @@ export function jobValues(gladys, job, language, now) {
     values.push({ key: FEATURE_KEYS.HOURS_SINCE_SUCCESS, state: Math.min(hours, MAX_HOURS) });
   }
   if (job.lastDurationS !== null) {
-    values.push({ key: FEATURE_KEYS.LAST_DURATION, state: job.lastDurationS });
+    values.push({
+      key: FEATURE_KEYS.LAST_DURATION,
+      state: Math.min(job.lastDurationS, MAX_DURATION_S),
+    });
   }
   if (job.destinationBytes !== null) {
     values.push({ key: FEATURE_KEYS.DESTINATION_SIZE, state: megabytes(job.destinationBytes) });
@@ -352,12 +355,15 @@ export function jobValues(gladys, job, language, now) {
 /** The values of the server device. */
 export function serverValues(gladys, { jobs, activeJob, progress }) {
   const ids = serverIds(gladys);
-  const states = jobs.map(stateOf);
   const values = [
     { key: SERVER_KEYS.RUNNING, state: activeJob ? 1 : 0 },
     { key: SERVER_KEYS.PROGRESS, state: activeJob ? (progress ?? 0) : 0 },
     { key: SERVER_KEYS.CURRENT_JOB, text: activeJob ? activeJob.name : '-' },
-    { key: SERVER_KEYS.FAILED, state: states.filter((s) => s === 'failed').length },
+    // The last run, not the state: a failed job running again still counts.
+    {
+      key: SERVER_KEYS.FAILED,
+      state: jobs.filter((job) => job.lastRun?.result === 'error').length,
+    },
     {
       key: SERVER_KEYS.OVERDUE,
       state: jobs.filter((job) => job.overdue).length,

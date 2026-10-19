@@ -148,7 +148,7 @@ Each trigger can be limited to some backups (empty: any).
 - **"certificate refused"**: a self-signed certificate; use the `http://`
   address on your network.
 - **A backup never becomes overdue**: in _Automatic_, a backup without
-  schedule cannot be overdue; choose a fixed delay.
+  schedule cannot be overdue; choose a fixed delay. A backup that has never succeeded is not overdue either: it shows Failed or Never run.
 - To see more, set the `LOG_LEVEL` variable of the integration to `debug`.
 
 ## Limits

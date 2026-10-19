@@ -85,14 +85,15 @@ export function formatBytes(bytes) {
  * The view of a job: its metadata, its last run, its last success, whether it
  * runs, its next run and whether it is overdue.
  */
-export function viewOf(job, results, server, { now, overdueHours }) {
+export function viewOf(job, results, server, { now, overdueHours, knownSuccess = null }) {
   let lastRun = results[0] ?? null;
   if (!lastRun && (job.lastErrorAt !== null || job.lastFinished !== null)) {
     // No log readable (its local database is missing): the metadata tell the essentials.
     lastRun =
       job.lastErrorAt !== null && (job.lastFinished === null || job.lastErrorAt > job.lastFinished)
         ? {
-            id: `${job.lastErrorAt}`,
+            // Another kind of id than the log's: a change of source is no new run.
+            id: `meta:${job.lastErrorAt}`,
             result: 'error',
             begin: job.lastErrorAt,
             end: job.lastErrorAt,
@@ -102,7 +103,7 @@ export function viewOf(job, results, server, { now, overdueHours }) {
             message: job.lastError,
           }
         : {
-            id: `${job.lastStarted ?? job.lastFinished}`,
+            id: `meta:${job.lastStarted ?? job.lastFinished}`,
             result: 'success',
             begin: job.lastStarted ?? job.lastFinished,
             end: job.lastFinished,
@@ -121,6 +122,10 @@ export function viewOf(job, results, server, { now, overdueHours }) {
     !(lastRun?.result === 'error' && job.lastFinished >= lastRun.begin)
   ) {
     candidates.push(job.lastFinished);
+  }
+  // The last success already seen: the log page only holds the last runs.
+  if (knownSuccess !== null) {
+    candidates.push(knownSuccess);
   }
   const lastSuccess = candidates.length > 0 ? Math.max(...candidates) : null;
   const view = {
@@ -201,6 +206,11 @@ export class DuplicatiHub {
     this.config = config;
     const signature = JSON.stringify([config.url, config.password]);
     if (signature !== this.signature) {
+      if (this.signature !== null && JSON.parse(this.signature)[0] !== config.url) {
+        // Another server: its job ids are not the ones seen before.
+        this.saved = { jobs: {} };
+        this.store.save(this.saved);
+      }
       this.signature = signature;
       this.client =
         config.url && config.password
@@ -331,7 +341,22 @@ export class DuplicatiHub {
       ) {
         results.set(job.id, cached);
       } else {
-        results.set(job.id, { signature, results: await client.results(job.id), at: now });
+        let fresh;
+        try {
+          fresh = await client.results(job.id);
+        } catch (err) {
+          // A log busy during a long backup: keep what was read, try again next time.
+          if (!(err instanceof DuplicatiError) || err.kind !== ERROR_KINDS.HTTP) {
+            throw err;
+          }
+          logger.debug(`Log of backup ${job.id} unreadable: ${err.message}`);
+          results.set(
+            job.id,
+            cached ? { ...cached, at: 0 } : { signature: null, results: [], at: 0 },
+          );
+          continue;
+        }
+        results.set(job.id, { signature, results: fresh, at: now });
       }
     }
     return { jobs, server, progress, results };
@@ -364,6 +389,7 @@ export class DuplicatiHub {
       const view = viewOf(job, results.get(job.id)?.results ?? [], server, {
         now,
         overdueHours: this.config.overdueHours,
+        knownSuccess: this.saved.jobs[job.id]?.lastSuccess ?? null,
       });
       next.set(job.id, view);
       const previous = this.jobs.get(job.id);
@@ -415,14 +441,24 @@ export class DuplicatiHub {
     const saved = this.saved.jobs[job.id];
     const run = job.lastRun?.id ?? null;
     if (!saved) {
-      this.saved.jobs[job.id] = { run, overdue: job.overdue };
+      this.saved.jobs[job.id] = { run, overdue: job.overdue, lastSuccess: job.lastSuccess };
       return true;
     }
     let dirty = false;
+    if (job.lastSuccess !== null && job.lastSuccess !== saved.lastSuccess) {
+      saved.lastSuccess = job.lastSuccess;
+      dirty = true;
+    }
     if (run !== null && run !== saved.run) {
+      // A run id from the log replacing one from the Metadata (or the reverse)
+      // is the same information read elsewhere: recorded, not announced.
+      const before = saved.run;
+      const sameSource = run.startsWith('meta:') === String(before ?? '').startsWith('meta:');
       saved.run = run;
       dirty = true;
-      await this.fireRun(job);
+      if (sameSource || before === null) {
+        await this.fireRun(job);
+      }
     }
     if (job.overdue !== saved.overdue) {
       // null: the threshold changed, nothing to announce.
@@ -661,7 +697,10 @@ export class DuplicatiHub {
 
   /** The job of a device, read again if stale; throws a readable error. */
   async jobOf(externalId) {
-    this.assertReadable();
+    // Only the configuration first: a past error is what the read below clears.
+    if (!this.client) {
+      this.assertReadable();
+    }
     await this.refreshIfStale();
     this.assertReadable();
     const job = this.find(externalId);
@@ -685,9 +724,14 @@ export class DuplicatiHub {
       throw err;
     }
     logger.info(`${job.name} started from Gladys`);
-    await this.polling?.catch(() => {});
-    await this.pollNow();
+    // Shown as running at once; the read that confirms it does not hold the
+    // answer (it may read every log, beyond the timeout of the action).
+    this.activeJobId = job.id;
     this.schedulePoll(); // 30 seconds while it runs
+    (this.polling ?? Promise.resolve())
+      .catch(() => {})
+      .then(() => this.pollNow())
+      .catch((err) => logger.debug(`Read after start failed: ${err.message}`));
   }
 
   /** "Test the connection": read Duplicati now, one line. */
@@ -702,7 +746,7 @@ export class DuplicatiHub {
       }
       const jobs = [...this.jobs.values()];
       const parts = [text.ok, text.jobs(jobs.length)];
-      const failed = jobs.filter((job) => stateOf(job) === 'failed').length;
+      const failed = jobs.filter((job) => job.lastRun?.result === 'error').length;
       const overdue = jobs.filter((job) => job.overdue).length;
       if (failed > 0) {
         parts.push(text.failed(failed));

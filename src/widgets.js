@@ -106,7 +106,7 @@ async function get(hub, { settings, language = 'en' }) {
     return message(TEXT.empty, language);
   }
 
-  const failed = jobs.filter((job) => stateOf(job) === 'failed').length;
+  const failed = jobs.filter((job) => job.lastRun?.result === 'error').length;
   const overdue = jobs.filter((job) => job.overdue).length;
   const ok = jobs.filter((job) => ['ok', 'warning'].includes(stateOf(job))).length;
   const components = [

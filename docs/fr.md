@@ -159,7 +159,7 @@ Chaque déclencheur peut se limiter à certaines sauvegardes (vide : toutes).
   `http://` sur votre réseau.
 - **Une sauvegarde ne passe jamais en retard** : en _Automatique_, une
   sauvegarde sans planification ne peut pas être en retard ; choisissez un délai
-  fixe.
+  fixe. Une sauvegarde qui n'a jamais réussi n'est pas en retard non plus : elle affiche En échec ou Jamais lancée.
 - Pour en voir plus, passez la variable `LOG_LEVEL` de l'intégration à `debug`.
 
 ## Limites

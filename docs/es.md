@@ -155,7 +155,7 @@ Cada disparador puede limitarse a algunas copias (vacío: todas).
 - **«certificado rechazado»**: un certificado autofirmado; use la dirección
   `http://` en su red.
 - **Una copia nunca tiene retraso**: en _Automático_, una copia sin
-  programación no puede tener retraso; elija un plazo fijo.
+  programación no puede tener retraso; elija un plazo fijo. Una copia que nunca se completó tampoco tiene retraso: muestra Fallida o Nunca ejecutada.
 - Para ver más, ponga la variable `LOG_LEVEL` de la integración en `debug`.
 
 ## Límites

@@ -157,7 +157,7 @@ Jeder Auslöser lässt sich auf einige Sicherungen beschränken (leer: alle).
 - **„Zertifikat abgelehnt“**: ein selbstsigniertes Zertifikat; nutze die
   `http://`-Adresse in deinem Netzwerk.
 - **Eine Sicherung wird nie überfällig**: Bei _Automatisch_ kann eine Sicherung
-  ohne Zeitplan nicht überfällig sein; wähle eine feste Zeit.
+  ohne Zeitplan nicht überfällig sein; wähle eine feste Zeit. Eine Sicherung, die nie erfolgreich war, ist auch nicht überfällig, sondern zeigt Fehlgeschlagen oder Nie gelaufen.
 - Für mehr Details setze die Variable `LOG_LEVEL` der Integration auf `debug`.
 
 ## Grenzen

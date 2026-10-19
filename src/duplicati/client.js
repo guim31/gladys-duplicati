@@ -141,7 +141,11 @@ function cleanMessage(line) {
   if (typeof line !== 'string') {
     return '';
   }
-  const text = line.replace(/^.*?\[[^\]]*\]:\s*/, '').trim();
+  // A fatal error spans lines ("The operation Backup has failed\nException: …").
+  const text = line
+    .replace(/^.*?\[[^\]]*\]:\s*/, '')
+    .replace(/\s*\n\s*/g, ': ')
+    .trim();
   return text.length > 200 ? `${text.slice(0, 199)}…` : text;
 }
 
@@ -180,7 +184,8 @@ export function normalizeResult(entry) {
         ? cleanMessage(data.Warnings?.[0])
         : '';
   return {
-    id: `${begin}`,
+    // At the second, the precision of the Metadata.
+    id: `${Math.floor(begin / 1000)}`,
     result,
     begin,
     end: end ?? begin,
@@ -381,10 +386,7 @@ export class DuplicatiClient {
       );
     } catch (err) {
       // A job whose local database is missing has no log: not a failure of Duplicati.
-      if (
-        err instanceof DuplicatiError &&
-        [ERROR_KINDS.NOT_FOUND, ERROR_KINDS.HTTP].includes(err.kind)
-      ) {
+      if (err instanceof DuplicatiError && err.kind === ERROR_KINDS.NOT_FOUND) {
         return [];
       }
       throw err;

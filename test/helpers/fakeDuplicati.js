@@ -25,6 +25,8 @@ export class FakeDuplicati {
     this.progress = { OverallProgress: 0, ProcessedFileSize: 0, TotalFileSize: 0 };
     /** 'down': the server does not answer; a number: that HTTP status. */
     this.failure = null;
+    /** A number: the HTTP status of every /log request (a busy job database). */
+    this.logFailure = null;
     this.requests = [];
     this.tokens = new Set();
     this.logins = 0;
@@ -155,6 +157,9 @@ export class FakeDuplicati {
     }
     const log = path.match(/^\/backup\/(\d+)\/log\?pagesize=\d+$/);
     if (log) {
+      if (this.logFailure) {
+        return { status: this.logFailure, body: '' };
+      }
       const job = this.jobs.get(log[1]);
       return job ? json(200, job.log) : json(404, { Error: 'Not found' });
     }

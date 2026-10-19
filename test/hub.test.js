@@ -139,6 +139,63 @@ test('a job becomes overdue once, by its schedule, and back when it succeeds', a
   assert.equal(state(world, 'Documents NAS', FEATURE_KEYS.STATE), 'OK');
 });
 
+test('a log unreadable for a while fires nothing, and the run after it fires once', async (t) => {
+  const world = await createWorld({ timings: { resultsEveryMs: 0 } });
+  t.after(() => world.app.stop());
+  world.duplicati.logFailure = 500;
+  await world.hub.pollNow();
+  world.duplicati.logFailure = null;
+  await world.hub.pollNow();
+  assert.equal(world.fake.sceneEvents.length, 0);
+  assert.equal(world.fake.connectionStatus.connected, true);
+  world.clock.advance(HOUR);
+  world.duplicati.run('Archive', 'success', { end: world.clock.time });
+  world.duplicati.logFailure = 500;
+  await world.hub.pollNow(); // the Metadata changed, the log cannot be read yet
+  world.duplicati.logFailure = null;
+  await world.hub.pollNow();
+  assert.deepEqual(
+    world.fake.sceneEvents.map((event) => [event.key, event.data.job]),
+    [[TRIGGERS.SUCCEEDED, 'Archive']],
+  );
+});
+
+test('the last success stays known when the failures push it out of the log page', async (t) => {
+  const world = await createWorld();
+  t.after(() => world.app.stop());
+  const before = world.hub.find(idsOf(world, 'Photos offsite').device).lastSuccess;
+  for (let i = 0; i < 12; i += 1) {
+    world.clock.advance(HOUR);
+    world.duplicati.run('Photos offsite', 'error', { end: world.clock.time });
+    // A run that went to its end with errors moves the Metadata too.
+    world.duplicati.byName('Photos offsite').metadata.LastBackupFinished = new Date(
+      world.clock.time,
+    )
+      .toISOString()
+      .replace(/[-:]|\.\d+/g, '');
+    await world.hub.pollNow();
+  }
+  assert.equal(world.hub.find(idsOf(world, 'Photos offsite').device).lastSuccess, before);
+});
+
+test('a failed backup running again still counts as failed, and actions recover after an outage', async (t) => {
+  const world = await createWorld();
+  t.after(() => world.app.stop());
+  await createDevices(world);
+  world.duplicati.activeJobId = world.duplicati.byName('Photos offsite').id;
+  await world.hub.pollNow();
+  assert.equal(world.fake.lastState(serverIds(world.gladys).feature(SERVER_KEYS.FAILED)), 1);
+  world.duplicati.activeJobId = null;
+  world.duplicati.failure = 'down';
+  await world.hub.pollNow();
+  world.duplicati.failure = null;
+  world.clock.advance(60_000);
+  const ack = await world.fake.sceneAction('get_backup_status', {
+    device: idsOf(world, 'Archive').device,
+  });
+  assert.equal(ack.success, true, ack.error);
+});
+
 test('the overdue threshold: automatic, weekdays only, none without schedule, or fixed', () => {
   const daily = { schedule: { periodMs: 24 * HOUR, allowedDays: 7 } };
   const weekdays = { schedule: { periodMs: 24 * HOUR, allowedDays: 5 } };

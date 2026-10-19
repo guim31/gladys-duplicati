@@ -231,6 +231,11 @@ Vérifié sur un vrai **Duplicati 2.4.0.1** (image `duplicati/duplicati`, le 19/
   le traitement des fichiers : on prend `ProcessedFileSize / TotalFileSize`, comme l'interface.
 - `POST /backup/<id>/start` → `{"Status":"OK","ID":<tâche>}` ; Duplicati la met en file si une autre
   tourne.
+- Identifiant d'exécution : `BeginTime` du journal **à la seconde** ; à défaut de journal lisible, un
+  identifiant `meta:…` tiré des Metadata. Passer d'une source à l'autre n'émet rien (sinon un 500
+  passager sur `/log` ferait annoncer une exécution fantôme) ; un 500 sur `/log` garde le cache. La
+  dernière réussite déjà vue est gardée dans `/data` : 10 échecs d'affilée la sortent de la page du
+  journal. Changer l'adresse du serveur oublie l'état sauvegardé (ids de tâche d'un autre serveur).
 - Les déclencheurs se fondent sur l'identifiant de la dernière exécution (son `BeginTime`), gardé dans
   `/data` : la première lecture d'une tâche n'émet rien. « En retard » automatique : période du
   `Repeat` + jours sautés par `AllowedDays` + max(1 h, période/4).
