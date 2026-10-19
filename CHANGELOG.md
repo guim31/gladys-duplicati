@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-19
+
 ### Added
 
 - The backup jobs of a Duplicati server (2.1 or later) in Gladys: one device
@@ -27,4 +29,5 @@ the notes of the version's GitHub Release.
 - "Test the connection"; texts and documentation in English, French, German
   and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-duplicati/commits/main
+[Unreleased]: https://github.com/guim31/gladys-duplicati/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-duplicati/releases/tag/v1.0.0
