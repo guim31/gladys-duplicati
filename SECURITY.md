@@ -30,6 +30,20 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration handles:
+
+- the **password of the Duplicati web interface**, stored by Gladys in the
+  integration configuration (never written to `/data`, never logged); it is
+  only sent, in the body of `POST /api/v1/auth/login`, to the address
+  configured, and redirects are not followed so it never reaches another host;
+- the **access token** Duplicati answers with: kept in memory only, asked again
+  when it expires;
+- `/data/duplicati-state.json`: the last run seen of each backup job and
+  whether it was overdue (no secret);
+- network: HTTP(S) requests to the Duplicati address, nothing else; no port is
+  opened. The integration can start a backup (when allowed in its
+  configuration), never delete, restore or edit one.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and Duplicati itself.

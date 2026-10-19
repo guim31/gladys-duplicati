@@ -1,41 +1,40 @@
 // -----------------------------------------------------------------------------
-// Scene actions (SDK v0.14+, Gladys 5.1+).
+// Scene action handlers (manifest `scene_actions`, Gladys 5.1+).
 //
-// A scene action is an OPERATION a scene author places in a scene, with
-// parameters and a result: "identify this device", "take a snapshot", "clean
-// these rooms". Each one is declared in the manifest `scene_actions` field
-// (key, label, `fields` in the config_schema grammar, scalar `outputs`) and
-// handled here, keyed by that same `key`; index.js registers every entry with
-// `gladys.onSceneAction(key, ...)`.
+// "Is this backup failed?" is already a scene condition on the device
+// features. The reading action is about what a condition cannot do: put the
+// state in a message ("Documents NAS: failed, last success 18/10 02:05"). It
+// reads Duplicati again when the last read is older than 15 seconds.
 //
-// Scene TRIGGERS are the other direction ("this happened"): they are fired by
-// the device that observes the event, see src/devices/motionSensor.js.
-//
-// The rules that matter:
-//   - `fields` arrive RESOLVED: scene variables substituted, defaults applied,
-//     validated by the core; a `"source": "devices"` field is the chosen
-//     device external_id;
-//   - resolve an object of the declared `outputs` (scalars only), readable by
-//     the following actions of the scene, or `undefined` for none. Keys not
-//     declared in the manifest are dropped by the core;
-//   - throwing fails THIS action only: the scene logs it and continues. A
-//     scene action is never a condition: return an output and let the scene
-//     author gate on it;
-//   - never fire a scene event as a consequence of a received action: a scene
-//     bound to that event would loop through the integration.
+// "Start a backup" can be disabled in the configuration: a scene, a voice
+// assistant or another user of Gladys then cannot start one.
 // -----------------------------------------------------------------------------
 
-import { createLogger } from '@gladysassistant/integration-sdk';
-import { signalDevice } from './devices/index.js';
-
-const logger = createLogger({ name: 'scenes' });
+import { hoursSince, stateOf } from './devices.js';
+import { SENTENCE_TEXT, STATE_TEXT, formatTime, labelled, pick } from './texts.js';
 
 export const SCENE_ACTIONS = {
-  // The ack is awaited under the action's `timeout_seconds` (15 s in the
-  // manifest), counted from the moment the scene reaches the action.
-  async identify_device(gladys, { fields, config }) {
-    logger.info(`Scene action identify_device <- ${fields.device}`);
-    const signalled = await signalDevice(gladys, fields.device, config);
-    return { signalled };
+  async get_backup_status(hub, { fields = {} }) {
+    const job = await hub.jobOf(fields.device);
+    const language = hub.config.language;
+    const state = stateOf(job);
+    const stateText = pick(STATE_TEXT[state], language);
+    const lastSuccess = job.lastSuccess === null ? '' : formatTime(job.lastSuccess, language);
+    const words = SENTENCE_TEXT[language] ?? SENTENCE_TEXT.en;
+    return {
+      failed: job.lastRun?.result === 'error',
+      overdue: job.overdue,
+      state: stateText,
+      name: job.name,
+      last_success: lastSuccess,
+      hours_since_success: hoursSince(job, hub.now()) ?? -1,
+      sentence: `${labelled(job.name, stateText, language)}, ${
+        lastSuccess ? words.lastSuccess(lastSuccess) : words.never
+      }.`,
+    };
+  },
+
+  async start_backup(hub, { fields = {} }) {
+    await hub.startBackup(await hub.jobOf(fields.device));
   },
 };

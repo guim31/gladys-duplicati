@@ -1,177 +1,727 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Duplicati",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Your Duplicati backups in Gladys: their state, and an alert when one fails or stops running.",
+    "fr": "Vos sauvegardes Duplicati dans Gladys : leur état, et une alerte si l'une échoue ou ne tourne plus.",
+    "de": "Deine Duplicati-Sicherungen in Gladys: ihr Zustand und ein Alarm, wenn eine fehlschlägt.",
+    "es": "Sus copias de Duplicati en Gladys: su estado y una alerta si una falla o deja de ejecutarse."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-duplicati:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-duplicati/main/cover.png",
+  "categories": ["services", "network"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your Duplicati server",
+        "fr": "Votre serveur Duplicati",
+        "de": "Dein Duplicati-Server",
+        "es": "Su servidor Duplicati"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Duplicati 2.1 or later. Enter the address of its web interface and the password that protects it (Settings → Access to user interface). Then add the backups to follow from the Discover tab.",
+        "fr": "Duplicati 2.1 ou plus récent. Saisissez l'adresse de son interface web et le mot de passe qui la protège (Paramètres → Accès à l'interface). Ajoutez ensuite les sauvegardes à suivre depuis l'onglet Découverte.",
+        "de": "Duplicati 2.1 oder neuer. Gib die Adresse seiner Weboberfläche und das Passwort ein, das sie schützt (Einstellungen → Zugriff auf die Oberfläche). Lege dann die Sicherungen im Tab „Entdecken“ an.",
+        "es": "Duplicati 2.1 o posterior. Introduzca la dirección de su interfaz web y la contraseña que la protege (Ajustes → Acceso a la interfaz). Después añada las copias desde la pestaña Descubrir."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-duplicati/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Einrichtungsanleitung",
+            "es": "Guía de instalación"
+          }
+        },
+        {
+          "url": "https://docs.duplicati.com/",
+          "label": {
+            "en": "Duplicati documentation",
+            "fr": "Documentation de Duplicati",
+            "de": "Duplicati-Dokumentation",
+            "es": "Documentación de Duplicati"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "Duplicati address",
+        "fr": "Adresse de Duplicati",
+        "de": "Duplicati-Adresse",
+        "es": "Dirección de Duplicati"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "description": {
+        "en": "The address of the web interface, port 8200 by default.",
+        "fr": "L'adresse de l'interface web, port 8200 par défaut.",
+        "de": "Die Adresse der Weboberfläche, standardmäßig Port 8200.",
+        "es": "La dirección de la interfaz web, puerto 8200 por defecto."
+      },
+      "placeholder": {
+        "en": "e.g. http://192.168.1.2:8200",
+        "fr": "ex. http://192.168.1.2:8200",
+        "de": "z. B. http://192.168.1.2:8200",
+        "es": "p. ej. http://192.168.1.2:8200"
+      },
+      "required": true
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Password",
+        "fr": "Mot de passe",
+        "de": "Passwort",
+        "es": "Contraseña"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "The password of the Duplicati web interface.",
+        "fr": "Le mot de passe de l'interface web de Duplicati.",
+        "de": "Das Passwort der Duplicati-Weboberfläche.",
+        "es": "La contraseña de la interfaz web de Duplicati."
+      },
+      "required": true
     },
     {
-      "key": "unit",
+      "key": "options",
+      "type": "section",
+      "label": {
+        "en": "Options",
+        "fr": "Options",
+        "de": "Optionen",
+        "es": "Opciones"
+      }
+    },
+    {
+      "key": "poll_interval",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "How often Duplicati is read. Every 30 seconds while a backup runs.",
+        "fr": "À quelle fréquence Duplicati est lu. Toutes les 30 secondes pendant une sauvegarde.",
+        "de": "Wie oft Duplicati gelesen wird. Alle 30 Sekunden während einer Sicherung.",
+        "es": "Con qué frecuencia se lee Duplicati. Cada 30 segundos durante una copia."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "300",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "60",
+          "label": {
+            "en": "1 minute",
+            "fr": "1 minute",
+            "de": "1 Minute",
+            "es": "1 minuto"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "overdue_hours",
+      "type": "select",
+      "label": {
+        "en": "Overdue after",
+        "fr": "En retard après",
+        "de": "Überfällig nach",
+        "es": "Con retraso tras"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "A backup without success for this long is overdue. Automatic: its schedule plus a margin; a backup without schedule is then never overdue.",
+        "fr": "Une sauvegarde sans réussite depuis ce délai est en retard. Automatique : sa planification plus une marge ; une sauvegarde sans planification n'est alors jamais en retard.",
+        "de": "Eine Sicherung ohne Erfolg seit dieser Zeit ist überfällig. Automatisch: ihr Zeitplan plus ein Puffer; eine Sicherung ohne Zeitplan ist dann nie überfällig.",
+        "es": "Una copia sin éxito desde hace este tiempo tiene retraso. Automático: su programación más un margen; una copia sin programación nunca tiene retraso."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "auto",
+      "options": [
+        {
+          "value": "auto",
+          "label": {
+            "en": "Automatic (from the schedule)",
+            "fr": "Automatique (selon la planification)",
+            "de": "Automatisch (nach Zeitplan)",
+            "es": "Automático (según la programación)"
+          }
+        },
+        {
+          "value": "12",
+          "label": {
+            "en": "12 hours",
+            "fr": "12 heures",
+            "de": "12 Stunden",
+            "es": "12 horas"
+          }
+        },
+        {
+          "value": "24",
+          "label": {
+            "en": "24 hours",
+            "fr": "24 heures",
+            "de": "24 Stunden",
+            "es": "24 horas"
+          }
+        },
+        {
+          "value": "48",
+          "label": {
+            "en": "2 days",
+            "fr": "2 jours",
+            "de": "2 Tage",
+            "es": "2 días"
+          }
+        },
+        {
+          "value": "72",
+          "label": {
+            "en": "3 days",
+            "fr": "3 jours",
+            "de": "3 Tage",
+            "es": "3 días"
+          }
+        },
+        {
+          "value": "168",
+          "label": {
+            "en": "1 week",
+            "fr": "1 semaine",
+            "de": "1 Woche",
+            "es": "1 semana"
+          }
+        }
+      ]
+    },
+    {
+      "key": "allow_start",
+      "type": "boolean",
+      "label": {
+        "en": "Allow starting backups",
+        "fr": "Autoriser le lancement des sauvegardes",
+        "de": "Starten von Sicherungen erlauben",
+        "es": "Permitir iniciar copias"
+      },
+      "description": {
+        "en": "Lets the scene action \"Start a backup\" start a backup in Duplicati.",
+        "fr": "Permet à l'action de scène « Lancer une sauvegarde » de lancer une sauvegarde dans Duplicati.",
+        "de": "Erlaubt der Szenenaktion „Sicherung starten“, eine Sicherung in Duplicati zu starten.",
+        "es": "Permite que la acción de escena «Iniciar una copia» inicie una copia en Duplicati."
+      },
+      "required": false,
+      "default": true
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the names",
+        "fr": "Langue des noms",
+        "de": "Sprache der Namen",
+        "es": "Idioma de los nombres"
+      },
+      "description": {
+        "en": "Language of the feature names (set when a device is added), of the states and of the scene results.",
+        "fr": "Langue des noms des fonctionnalités (fixés à l'ajout d'un appareil), des états et des résultats de scène.",
+        "de": "Sprache der Funktionsnamen (beim Anlegen eines Geräts festgelegt), der Zustände und der Szenen-Ergebnisse.",
+        "es": "Idioma de los nombres de las funciones (fijados al añadir un dispositivo), de los estados y de los resultados de escena."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "backup_succeeded",
+      "label": {
+        "en": "A backup succeeds",
+        "fr": "Une sauvegarde réussit",
+        "de": "Eine Sicherung gelingt",
+        "es": "Una copia se completa"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A Duplicati backup completes, with or without warnings.",
+        "fr": "Une sauvegarde Duplicati se termine, avec ou sans avertissements.",
+        "de": "Eine Duplicati-Sicherung wird abgeschlossen, mit oder ohne Warnungen.",
+        "es": "Una copia de Duplicati termina, con o sin avisos."
       },
       "fields": [
         {
           "key": "device",
-          "type": "select",
+          "type": "multi_select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Backups (empty: any)",
+            "fr": "Sauvegardes (vide : toutes)",
+            "de": "Sicherungen (leer: alle)",
+            "es": "Copias (vacío: todas)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "job",
+          "type": "string",
+          "label": {
+            "en": "Backup name",
+            "fr": "Nom de la sauvegarde",
+            "de": "Name der Sicherung",
+            "es": "Nombre de la copia"
+          }
         },
         {
-          "key": "target",
+          "key": "duration_minutes",
+          "type": "number",
+          "label": {
+            "en": "Duration (minutes)",
+            "fr": "Durée (minutes)",
+            "de": "Dauer (Minuten)",
+            "es": "Duración (minutos)"
+          }
+        },
+        {
+          "key": "warnings",
+          "type": "number",
+          "label": {
+            "en": "Warnings",
+            "fr": "Avertissements",
+            "de": "Warnungen",
+            "es": "Avisos"
+          }
+        },
+        {
+          "key": "versions",
+          "type": "number",
+          "label": {
+            "en": "Versions",
+            "fr": "Versions",
+            "de": "Versionen",
+            "es": "Versiones"
+          }
+        },
+        {
+          "key": "destination_size",
+          "type": "string",
+          "label": {
+            "en": "Destination size",
+            "fr": "Taille de la destination",
+            "de": "Größe am Ziel",
+            "es": "Tamaño en el destino"
+          }
+        }
+      ]
+    },
+    {
+      "key": "backup_failed",
+      "label": {
+        "en": "A backup fails",
+        "fr": "Une sauvegarde échoue",
+        "de": "Eine Sicherung schlägt fehl",
+        "es": "Una copia falla"
+      },
+      "description": {
+        "en": "A Duplicati backup ends with errors, or with warnings if chosen in the result filter.",
+        "fr": "Une sauvegarde Duplicati se termine en erreur, ou avec avertissements si le filtre du résultat les inclut.",
+        "de": "Eine Duplicati-Sicherung endet mit Fehlern, oder mit Warnungen, wenn im Ergebnisfilter gewählt.",
+        "es": "Una copia de Duplicati termina con errores, o con avisos si se eligen en el filtro del resultado."
+      },
+      "fields": [
+        {
+          "key": "device",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "source": "devices",
+          "label": {
+            "en": "Backups (empty: any)",
+            "fr": "Sauvegardes (vide : toutes)",
+            "de": "Sicherungen (leer: alle)",
+            "es": "Copias (vacío: todas)"
+          }
+        },
+        {
+          "key": "result",
+          "type": "multi_select",
+          "label": {
+            "en": "Result (empty: errors and warnings)",
+            "fr": "Résultat (vide : erreurs et avertissements)",
+            "de": "Ergebnis (leer: Fehler und Warnungen)",
+            "es": "Resultado (vacío: errores y avisos)"
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "error",
+              "label": {
+                "en": "Errors",
+                "fr": "Erreurs",
+                "de": "Fehler",
+                "es": "Errores"
+              }
+            },
+            {
+              "value": "warning",
+              "label": {
+                "en": "Warnings",
+                "fr": "Avertissements",
+                "de": "Warnungen",
+                "es": "Avisos"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "job",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Backup name",
+            "fr": "Nom de la sauvegarde",
+            "de": "Name der Sicherung",
+            "es": "Nombre de la copia"
+          }
+        },
+        {
+          "key": "message",
+          "type": "string",
+          "label": {
+            "en": "First error or warning",
+            "fr": "Première erreur ou avertissement",
+            "de": "Erster Fehler oder erste Warnung",
+            "es": "Primer error o aviso"
+          }
+        },
+        {
+          "key": "errors",
+          "type": "number",
+          "label": {
+            "en": "Errors",
+            "fr": "Erreurs",
+            "de": "Fehler",
+            "es": "Errores"
+          }
+        },
+        {
+          "key": "warnings",
+          "type": "number",
+          "label": {
+            "en": "Warnings",
+            "fr": "Avertissements",
+            "de": "Warnungen",
+            "es": "Avisos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "backup_overdue",
+      "label": {
+        "en": "A backup is overdue",
+        "fr": "Une sauvegarde est en retard",
+        "de": "Eine Sicherung ist überfällig",
+        "es": "Una copia tiene retraso"
+      },
+      "description": {
+        "en": "A backup has not succeeded for longer than the \"Overdue after\" delay of the configuration.",
+        "fr": "Une sauvegarde n'a pas réussi depuis plus longtemps que le délai « En retard après » de la configuration.",
+        "de": "Eine Sicherung war länger als die Zeit „Überfällig nach“ der Konfiguration nicht erfolgreich.",
+        "es": "Una copia no se ha completado desde hace más que el plazo «Con retraso tras» de la configuración."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "multi_select",
+          "source": "devices",
+          "label": {
+            "en": "Backups (empty: any)",
+            "fr": "Sauvegardes (vide : toutes)",
+            "de": "Sicherungen (leer: alle)",
+            "es": "Copias (vacío: todas)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "job",
+          "type": "string",
+          "label": {
+            "en": "Backup name",
+            "fr": "Nom de la sauvegarde",
+            "de": "Name der Sicherung",
+            "es": "Nombre de la copia"
+          }
+        },
+        {
+          "key": "hours_since_success",
+          "type": "number",
+          "label": {
+            "en": "Hours since last success",
+            "fr": "Heures depuis la dernière réussite",
+            "de": "Stunden seit letztem Erfolg",
+            "es": "Horas desde el último éxito"
+          }
+        },
+        {
+          "key": "last_success",
+          "type": "string",
+          "label": {
+            "en": "Last success",
+            "fr": "Dernière réussite",
+            "de": "Letzter Erfolg",
+            "es": "Último éxito"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "get_backup_status",
+      "label": {
+        "en": "State of a backup",
+        "fr": "État d'une sauvegarde",
+        "de": "Zustand einer Sicherung",
+        "es": "Estado de una copia"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Reads the state of a backup for the next actions: failed, overdue, in words, and a ready-made sentence.",
+        "fr": "Lit l'état d'une sauvegarde pour les actions suivantes : en échec, en retard, en toutes lettres, et une phrase toute prête.",
+        "de": "Liest den Zustand einer Sicherung für die nächsten Aktionen: fehlgeschlagen, überfällig, in Worten, und einen fertigen Satz.",
+        "es": "Lee el estado de una copia para las siguientes acciones: fallida, con retraso, en palabras, y una frase lista."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Backup",
+            "fr": "Sauvegarde",
+            "de": "Sicherung",
+            "es": "Copia"
+          },
           "required": true
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "failed",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Failed",
+            "fr": "En échec",
+            "de": "Fehlgeschlagen",
+            "es": "Fallida"
+          }
+        },
+        {
+          "key": "overdue",
+          "type": "boolean",
+          "label": {
+            "en": "Overdue",
+            "fr": "En retard",
+            "de": "Überfällig",
+            "es": "Con retraso"
+          }
+        },
+        {
+          "key": "state",
+          "type": "string",
+          "label": {
+            "en": "State",
+            "fr": "État",
+            "de": "Zustand",
+            "es": "Estado"
+          }
+        },
+        {
+          "key": "name",
+          "type": "string",
+          "label": {
+            "en": "Backup name",
+            "fr": "Nom de la sauvegarde",
+            "de": "Name der Sicherung",
+            "es": "Nombre de la copia"
+          }
+        },
+        {
+          "key": "last_success",
+          "type": "string",
+          "label": {
+            "en": "Last success",
+            "fr": "Dernière réussite",
+            "de": "Letzter Erfolg",
+            "es": "Último éxito"
+          }
+        },
+        {
+          "key": "hours_since_success",
+          "type": "number",
+          "label": {
+            "en": "Hours since last success",
+            "fr": "Heures depuis la dernière réussite",
+            "de": "Stunden seit letztem Erfolg",
+            "es": "Horas desde el último éxito"
+          }
+        },
+        {
+          "key": "sentence",
+          "type": "string",
+          "label": {
+            "en": "Sentence",
+            "fr": "Phrase",
+            "de": "Satz",
+            "es": "Frase"
+          }
+        }
+      ]
+    },
+    {
+      "key": "start_backup",
+      "label": {
+        "en": "Start a backup",
+        "fr": "Lancer une sauvegarde",
+        "de": "Sicherung starten",
+        "es": "Iniciar una copia"
+      },
+      "description": {
+        "en": "Starts a Duplicati backup now (queued if another one runs). Can be disabled in the configuration.",
+        "fr": "Lance une sauvegarde Duplicati maintenant (mise en file si une autre tourne). Désactivable dans la configuration.",
+        "de": "Startet jetzt eine Duplicati-Sicherung (in der Warteschlange, wenn eine andere läuft). In der Konfiguration abschaltbar.",
+        "es": "Inicia ahora una copia de Duplicati (en cola si otra se ejecuta). Se puede desactivar en la configuración."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Backup",
+            "fr": "Sauvegarde",
+            "de": "Sicherung",
+            "es": "Copia"
+          },
+          "required": true
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "duplicati",
+      "label": {
+        "en": "Duplicati",
+        "fr": "Duplicati",
+        "de": "Duplicati",
+        "es": "Duplicati"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Failed backups first, then overdue ones, then the others, with their last success.",
+        "fr": "Les sauvegardes en échec d'abord, puis en retard, puis les autres, avec leur dernière réussite.",
+        "de": "Erst fehlgeschlagene Sicherungen, dann überfällige, dann die anderen, mit letztem Erfolg.",
+        "es": "Primero las copias fallidas, luego las retrasadas y las demás, con su último éxito."
+      },
+      "icon": "hard-drive",
+      "action_timeout_seconds": 30,
+      "settings": [
+        {
+          "key": "jobs",
+          "type": "multi_select",
+          "source": "devices",
+          "label": {
+            "en": "Backups (empty: all)",
+            "fr": "Sauvegardes (vide : toutes)",
+            "de": "Sicherungen (leer: alle)",
+            "es": "Copias (vacío: todas)"
+          },
+          "description": {
+            "en": "Empty: every backup of the server. Only the devices added to Gladys can be chosen.",
+            "fr": "Vide : toutes les sauvegardes du serveur. Seuls les appareils ajoutés à Gladys peuvent être choisis.",
+            "de": "Leer: alle Sicherungen des Servers. Nur die in Gladys angelegten Geräte sind wählbar.",
+            "es": "Vacío: todas las copias del servidor. Solo se pueden elegir los dispositivos añadidos a Gladys."
+          },
+          "required": false
+        }
+      ]
     }
   ]
 }

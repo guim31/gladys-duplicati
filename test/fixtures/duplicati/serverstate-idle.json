@@ -1,0 +1,31 @@
+{
+  "ActiveTask": null,
+  "ProgramState": "Running",
+  "SchedulerQueueIds": [],
+  "ProposedSchedule": [
+    {
+      "Item1": "1",
+      "Item2": "2026-10-20T02:00:00Z"
+    },
+    {
+      "Item1": "2",
+      "Item2": "2026-10-20T02:00:00Z"
+    },
+    {
+      "Item1": "4",
+      "Item2": "2026-10-25T03:30:00Z"
+    }
+  ],
+  "HasWarning": true,
+  "HasError": true,
+  "SuggestedStatusIcon": "ReadyError",
+  "EstimatedPauseEnd": "0001-01-01T00:00:00Z",
+  "LastEventID": 40,
+  "LastDataUpdateID": 16,
+  "LastNotificationUpdateID": 2,
+  "UpdatedVersion": null,
+  "UpdaterState": "Waiting",
+  "UpdateDownloadLink": null,
+  "UpdateDownloadProgress": 0,
+  "Type": "legacystatus"
+}
