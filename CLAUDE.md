@@ -31,16 +31,21 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+index.js                          SDK wiring only (src/app.js), shutdown
+src/app.js                        every SDK handler registered on the hub (the tests use it too)
+src/hub.js                        reading timer, job views, states, scene events, transports, status
+src/duplicati/client.js           Duplicati 2.1+ REST API: login, jobs, logs, server state, start
+src/devices.js                    device blueprints, feature names (4 languages), states, overdue rule
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget (manifest `widgets`)
+src/texts.js                      every text sent to Gladys outside the widget, 4 languages
+src/store.js                      /data/duplicati-state.json: last run seen per job, overdue or not
+src/problems.js                   one log line when a repeated failure starts, one when it ends
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (mandatory, same sections)
+test/                             node --test, against the SDK's fake Gladys and test/helpers/fakeDuplicati.js
+test/fixtures/duplicati/          real answers of Duplicati 2.4.0.1 (Docker), trimmed
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +75,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German ("du") and Spanish
+  ("usted"): action messages, manifest texts, widget, feature names, and
+  `docs/{en,fr,de,es}.md`, kept in sync. `test/i18n.test.js` checks it.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -197,6 +203,42 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
 - Les filtres de scène ne font qu'égalité et appartenance : un seuil reste le travail d'un capteur.
 - **Les clés de widgets, de déclencheurs et d'actions sont figées une fois publiées.**
 - `gladys_version` `>=5.1.0` dès qu'il y a widgets, déclencheurs ou actions de scène.
+
+## Duplicati (propre à ce dépôt)
+
+Vérifié sur un vrai **Duplicati 2.4.0.1** (image `duplicati/duplicati`, le 19/10/2026) :
+
+- **API REST 2.1+** (`/api/v1/`), celle de l'interface web. `POST /auth/login` `{ Password }` rend un
+  `AccessToken` (JWT de **15 min**) ; le jeton de rafraîchissement est un cookie lié au navigateur, on ne
+  s'en sert pas : le client se reconnecte avec le mot de passe à 12 min ou sur un 401. Mauvais mot de
+  passe : 401 `{"Error":"Failed to log in"}`. Duplicati 2.0 n'a pas ce point d'entrée (404 → « pas de
+  Duplicati 2.1 »). L'image Docker accepte `DUPLICATI__WEBSERVICE_PASSWORD` et
+  `DUPLICATI__WEBSERVICE_ALLOWED_HOSTNAMES` (sans ce dernier, un nom d'hôte inconnu est refusé).
+- `GET /backups` : `[{ Backup: { ID, Name, Tags, Metadata }, Schedule }]`. Les `Metadata` (chaînes)
+  n'existent qu'après une première exécution : `LastBackupStarted`/`Finished` (format `20261019T194626Z`)
+  ne bougent **qu'à une sauvegarde menée à bout**, `LastErrorDate`/`LastErrorMessage` à un échec,
+  `TargetFilesSize`, `BackupListCount` (versions), `LastBackupDuration` (TimeSpan .NET).
+  `Schedule.LastRun` reste à `0001-01-01` pour un lancement manuel ; `Repeat` vaut `1D`, `1W`, `12h`…
+- **Une sauvegarde avec avertissements ne se voit pas dans les Metadata** (identiques à un succès) : il
+  faut le journal, `GET /backup/<id>/log?pagesize=N` (le plus récent d'abord), dont chaque `Message` est
+  le JSON du résultat (`ParsedResult` Success/Warning/Error/Fatal, `MainOperation`, `BeginTime`,
+  `WarningsActualLength`, `ErrorsActualLength`, `Warnings`, `Errors`, et un gros `Messages`). Lu
+  seulement quand les Metadata d'une tâche changent, à la fin d'une exécution, et au plus tard toutes
+  les heures.
+- `GET /serverstate` : `ActiveTask` `{ Item1: id de tâche, Item2: id de sauvegarde }` ou `null`,
+  `ProposedSchedule` `[{ Item1: id, Item2: date }]` (prochaines exécutions). `GET /progressstate` répond
+  même au repos (l'état précédent) : ne le lire que si `ActiveTask`. `OverallProgress` reste à 0 pendant
+  le traitement des fichiers : on prend `ProcessedFileSize / TotalFileSize`, comme l'interface.
+- `POST /backup/<id>/start` → `{"Status":"OK","ID":<tâche>}` ; Duplicati la met en file si une autre
+  tourne.
+- Identifiant d'exécution : `BeginTime` du journal **à la seconde** ; à défaut de journal lisible, un
+  identifiant `meta:…` tiré des Metadata. Passer d'une source à l'autre n'émet rien (sinon un 500
+  passager sur `/log` ferait annoncer une exécution fantôme) ; un 500 sur `/log` garde le cache. La
+  dernière réussite déjà vue est gardée dans `/data` : 10 échecs d'affilée la sortent de la page du
+  journal. Changer l'adresse du serveur oublie l'état sauvegardé (ids de tâche d'un autre serveur).
+- Les déclencheurs se fondent sur l'identifiant de la dernière exécution (son `BeginTime`), gardé dans
+  `/data` : la première lecture d'une tâche n'émet rien. « En retard » automatique : période du
+  `Repeat` + jours sautés par `AllowedDays` + max(1 h, période/4).
 
 ## Store
 

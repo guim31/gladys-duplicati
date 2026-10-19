@@ -1,0 +1,42 @@
+{
+  "BackupID": "1",
+  "TaskID": 6,
+  "BackendAction": "Put",
+  "BackendPath": "duplicati-b65f8bdc6aebb482a9a28c52f29adf304.dblock.zip",
+  "BackendFileSize": 51404179,
+  "BackendFileProgress": 51404179,
+  "BackendSpeed": -1,
+  "BackendIsBlocking": false,
+  "CurrentFilename": "/source/big.bin",
+  "CurrentFilesize": 400000000,
+  "CurrentFileoffset": 207618048,
+  "CurrentFilecomplete": false,
+  "Phase": "Backup_ProcessingFiles",
+  "OverallProgress": 0,
+  "ProcessedFileCount": 4,
+  "ProcessedFileSize": 600006,
+  "TotalFileCount": 5,
+  "TotalFileSize": 400600006,
+  "StillCounting": false,
+  "ActiveTransfers": [
+    {
+      "BackendAction": "Put",
+      "BackendPath": "duplicati-b65f8bdc6aebb482a9a28c52f29adf304.dblock.zip",
+      "BackendFileSize": 51404179,
+      "BackendFileProgress": 51404179,
+      "BackendSpeed": -1,
+      "BackendIsBlocking": false
+    },
+    {
+      "BackendAction": "Put",
+      "BackendPath": "duplicati-be9838a4a10f2497082b2c1fe1b0eefde.dblock.zip",
+      "BackendFileSize": 51404179,
+      "BackendFileProgress": 51404179,
+      "BackendSpeed": -1,
+      "BackendIsBlocking": false
+    }
+  ],
+  "RemoteSyncDestinationIndex": 0,
+  "RemoteSyncDestinationCount": 0,
+  "EstimatedTimeToCompletion": "00:00:40.1860833"
+}

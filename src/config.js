@@ -1,45 +1,97 @@
 // -----------------------------------------------------------------------------
-// Integration configuration.
+// Integration configuration: defaults (they mirror the `default` values of the
+// manifest `config_schema`, see test/manifest.test.js) and normalization, so
+// the rest of the code never deals with strings, blanks or `undefined`.
 //
-// The configuration is filled in by the user in Gladys, from the `config_schema`
-// declared in `gladys-assistant-integration.json`. The SDK fetches it for you
-// (`gladys.getConfig()`) and notifies you of every change through
-// `gladys.onConfigUpdated()`.
-//
-// This module only provides defaults and normalizes the received object, so the
-// rest of the code never has to deal with `undefined`.
+// One Duplicati server (2.1 or later), reached with the password of its web
+// interface.
 // -----------------------------------------------------------------------------
 
-// Defaults: they MUST stay consistent with the `default` values declared in the
-// `config_schema` of the manifest.
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+// Refresh intervals offered in the configuration, in seconds.
+export const POLL_INTERVALS = ['60', '300', '900'];
+
+// "Overdue after": automatic (from the schedule of each job) or fixed hours.
+export const OVERDUE_CHOICES = ['auto', '12', '24', '48', '72', '168'];
+
+export const DEFAULT_PORT = 8200;
+
 export const DEFAULT_CONFIG = {
-  latitude: 48.8566, // Paris
-  longitude: 2.3522,
-  unit: 'celsius', // 'celsius' | 'fahrenheit'
-  // Seconds between two reads of the polled sensors. Gladys polls at most once
-  // a minute: slower intervals are applied by skipping polls (see
-  // createPoller in src/devices/index.js).
-  poll_frequency: 300,
-  // Reserved key (NOT in config_schema): because the manifest declares both
-  // 'local' and 'cloud' in its `transports` field, Gladys shows a standard
-  // "Prefer the local connection" toggle and sends the user's choice here.
-  // Read-only for the integration; defaults to true.
-  GLADYS_PREFER_LOCAL: true,
+  url: '',
+  password: '',
+  poll_interval: '300',
+  overdue_hours: 'auto',
+  allow_start: true,
+  language: 'fr',
 };
 
+// Pages of the Duplicati interface: a URL copied from the browser points at
+// one of them, the API lives at the root.
+const INTERFACE_PATH = /\/(ngclient|ngax|login\.html|index\.html|api)(\/.*)?$/i;
+
 /**
- * Merge the user config with the defaults.
- * @param {Record<string, unknown>} raw config returned by the SDK
+ * Parse the address typed by the user into a base URL: a bare host or IP
+ * (`192.0.2.10`, port 8200 then), or a URL copied from the browser
+ * (`http://192.0.2.10:8200/ngclient/`). HTTP by default for a bare host. A
+ * path is kept (a server behind a reverse proxy sub-path), the interface
+ * pages dropped.
+ * @param {unknown} raw
+ * @returns {string|null} `http(s)://host[:port][/path]`, null when unusable
+ */
+export function parseServerUrl(raw) {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+  const text = raw.trim();
+  if (!text) {
+    return null;
+  }
+  const bare = !/^[a-z][a-z0-9+.-]*:\/\//i.test(text);
+  let url;
+  try {
+    url = new URL(bare ? `http://${text}` : text);
+  } catch {
+    return null;
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) {
+    return null;
+  }
+  // Credentials in the address would end up in the logs.
+  if (url.username || url.password) {
+    return null;
+  }
+  if (bare && !url.port) {
+    url.port = String(DEFAULT_PORT);
+  }
+  const path = url.pathname.replace(INTERFACE_PATH, '').replace(/\/+$/, '');
+  return `${url.origin}${path}`;
+}
+
+/** Host part shown to the user (no scheme). */
+export const hostOf = (url) => url.replace(/^https?:\/\//, '');
+
+/**
+ * @param {Record<string, unknown>} raw the configuration returned by the SDK
  */
 export function normalizeConfig(raw = {}) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const text = (key) => (typeof source[key] === 'string' ? source[key].trim() : '');
+  const typed = text('url');
+  const pollInterval = POLL_INTERVALS.includes(String(source.poll_interval))
+    ? String(source.poll_interval)
+    : DEFAULT_CONFIG.poll_interval;
+  const overdue = OVERDUE_CHOICES.includes(String(source.overdue_hours))
+    ? String(source.overdue_hours)
+    : DEFAULT_CONFIG.overdue_hours;
   return {
-    ...DEFAULT_CONFIG,
-    ...raw,
-    // Force the types: config may arrive as strings from a form.
-    latitude: Number(raw.latitude ?? DEFAULT_CONFIG.latitude),
-    longitude: Number(raw.longitude ?? DEFAULT_CONFIG.longitude),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
+    url: typed ? parseServerUrl(typed) : null,
+    urlTyped: Boolean(typed),
+    // Never trimmed: a password may end with a space.
+    password: typeof source.password === 'string' ? source.password : '',
+    pollIntervalMs: Number(pollInterval) * 1000,
+    overdueHours: overdue === 'auto' ? null : Number(overdue),
+    allowStart: source.allow_start !== false && source.allow_start !== 'false',
+    language: LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language,
   };
 }
