@@ -1,6 +1,6 @@
 {
   "name": "gladys-duplicati",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Duplicati backup jobs (state, failures, overdue backups) in Gladys Assistant.",
   "type": "module",
